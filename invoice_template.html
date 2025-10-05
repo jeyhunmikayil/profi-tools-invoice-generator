@@ -1,0 +1,545 @@
+<!-- invoice_template.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>PROFORMA INVOICE - {{ data.invoice_no }}</title>
+    <!-- WeasyPrint relies on simple, clean CSS for accurate rendering. -->
+    <style>
+        /* Define variables and base styles */
+        :root {
+            --accent-color: #FF4500;
+            /* Orangered */
+            --border-color: #e5e7eb;
+            /* Gray-200 */
+            --bg-color: #f9fafb;
+            /* Gray-50 */
+            --text-color: #1f2937;
+            /* Gray-800 */
+            --radius: 0.375rem;
+            /* rounded-md */
+        }
+
+        /* 💡 FIX 1: Apply Border-Box Globally for accurate sizing */
+        * {
+            box-sizing: border-box;
+        }
+
+        /* 🛠️ MARGIN FIX 1: Use 7mm side margins for a wider, stable page */
+        @page {
+            size: A4;
+            margin: 10mm 7mm;
+            /* Top/Bottom 10mm, Left/Right 7mm */
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 10pt;
+            color: var(--text-color);
+        }
+
+        /* 🛠️ MARGIN FIX 2: Set container width to match the new 7mm side margins */
+        .container {
+            width: 196mm;
+            /* A4 width (210mm) minus total horizontal margin (14mm) */
+            margin: 0 auto;
+            /* Center the container */
+        }
+
+        /* Utility classes */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .font-bold {
+            font-weight: bold;
+        }
+
+        .font-extrabold {
+            font-weight: 800;
+        }
+
+        .text-sm {
+            font-size: 9pt;
+        }
+
+        .text-xs {
+            font-size: 7pt;
+        }
+
+        .text-lg {
+            font-size: 12pt;
+        }
+
+        .tabular-nums {
+            font-feature-settings: 'tnum';
+        }
+
+        /* Header Layout */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding-bottom: 10pt;
+            border-bottom: 1pt solid var(--border-color);
+        }
+
+        .logo-block {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-img {
+            width: 40pt;
+            height: 40pt;
+            object-fit: contain;
+            margin-right: 8pt;
+            vertical-align: middle;
+        }
+
+        .title-block {
+            text-align: right;
+        }
+
+        .title {
+            font-size: 24pt;
+            font-weight: 800;
+            color: black;
+            margin-top: 15pt;
+        }
+
+        /* Contact and Invoice Details */
+        .details-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10pt;
+            margin-bottom: 15pt;
+            font-size: 9pt;
+        }
+
+        .invoice-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.5;
+        }
+
+        .invoice-info div {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10pt;
+            width: 100%;
+        }
+
+        .invoice-info span:first-child {
+            font-weight: bold;
+            color: #4b5563;
+            width: 80pt;
+            text-align: left;
+        }
+
+        .invoice-info span:last-child {
+            font-weight: 500;
+            text-align: right;
+            width: 100pt;
+        }
+
+        /* Terms and Billed To */
+        .info-box {
+            border: 1pt solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 15pt;
+            display: flex;
+        }
+
+        .billed-to,
+        .terms {
+            padding: 10pt;
+            width: 50%;
+            box-sizing: border-box;
+            /* Already present, kept for clarity */
+        }
+
+        .billed-to {
+            border-right: 1pt solid var(--border-color);
+        }
+
+        .info-box h3 {
+            font-size: 9pt;
+            font-weight: 800;
+            color: var(--text-color);
+            margin-bottom: 5pt;
+            margin-top: 0;
+        }
+
+        .field-label {
+            font-size: 7pt;
+            font-weight: bold;
+            color: #6b7280;
+        }
+
+        .field-value {
+            white-space: pre-wrap;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .terms-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3pt;
+        }
+
+        .terms-row span:first-child {
+            font-weight: bold;
+            color: #4b5563;
+        }
+
+        .terms-row span:last-child {
+            font-weight: 500;
+            text-align: right;
+        }
+
+        /* Item Table */
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1pt solid var(--border-color);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 15pt;
+        }
+
+        .item-table thead {
+            background-color: var(--accent-color);
+            color: white;
+            font-size: 9pt;
+        }
+
+        .item-table th,
+        .item-table td {
+            /* 💡 FIX 3: Reduced horizontal padding from 8pt to 6pt to prevent overflow */
+            padding: 5pt 6pt;
+            border-bottom: 1pt solid var(--border-color);
+        }
+
+        .item-table th {
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* 💡 FIX 4: Adjusted column widths (Total 99%) */
+        .col-no {
+            width: 4%;
+            text-align: center;
+        }
+
+        .col-model {
+            width: 43%;
+            /* Increased model column slightly */
+            text-align: left;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            /* Ensure long words break */
+        }
+
+        .col-qty-unit {
+            width: 14%;
+            text-align: center;
+        }
+
+        /* Reduced */
+        .col-price {
+            width: 17%;
+            text-align: right;
+        }
+
+        /* Reduced */
+        .col-total {
+            width: 21%;
+            text-align: right;
+            color: var(--accent-color);
+        }
+
+        .item-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Total Section */
+        .total-row {
+            font-size: 9pt;
+        }
+
+        .total-row td:first-child {
+            text-align: right;
+            font-weight: 600;
+            padding-right: 20pt;
+            color: var(--text-color);
+        }
+
+        .total-row td:last-child {
+            background-color: var(--bg-color);
+            text-align: right;
+            padding-right: 8pt;
+            font-weight: bold;
+            color: var(--text-color);
+            /* 💡 FIX 5: Removed unstable flex properties for PDF rendering */
+            display: block;
+            text-align: right;
+            padding: 5pt 6pt;
+            /* Keep consistent padding */
+            border-bottom: 1pt solid var(--border-color);
+        }
+
+        .total-row td:last-child span {
+            /* Ensure the two spans (value and currency) align without flex */
+            display: inline-block;
+            margin-left: 4pt;
+            /* Mimic gap */
+        }
+
+        .tax-label {
+            font-weight: bold;
+        }
+
+        .grand-total-row {
+            font-size: 12pt;
+            background-color: #fff5f5;
+            border-top: 2pt solid var(--accent-color);
+        }
+
+        .grand-total-row td:first-child {
+            font-weight: 800;
+            color: var(--accent-color);
+        }
+
+        .grand-total-row td:last-child {
+            font-weight: 800;
+            color: var(--accent-color);
+        }
+
+        /* Notes and Footer */
+        .notes-block {
+            margin-top: 15pt;
+            border-top: 1pt solid var(--border-color);
+            padding-top: 10pt;
+        }
+
+        .notes-content {
+            white-space: pre-wrap;
+            min-height: 40pt;
+            border: 1pt solid var(--border-color);
+            padding: 8pt;
+            border-radius: 4pt;
+            background-color: var(--bg-color);
+        }
+
+        .footer {
+            margin-top: 30pt;
+        }
+
+        .contact-person {
+            margin-bottom: 50pt;
+            font-size: 9pt;
+        }
+
+        .contact-person span:first-child {
+            font-weight: bold;
+            color: #4b5563;
+            margin-right: 5pt;
+        }
+
+        .signature-line {
+            width: 150pt;
+            border-top: 1pt solid #4b5563;
+            padding-top: 2pt;
+            font-size: 8pt;
+            color: #4b5563;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header">
+            <!-- Left: Company Info -->
+            <div>
+                <div class="logo-block">
+                    <img src="data:image/jpeg;base64,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" alt="Profi Tools Logo" class="logo-img"
+                        style="height:40px; width:auto; margin-right:20px" ; />
+                    <div>
+                        <div class="font-extrabold text-lg" style="margin-bottom: 2pt;">Profi Tools LLC</div>
+                        <div class="text-sm" style="color: #6b7280;">273E Shafaat Mehdiyev, Baku, Azerbaijan</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Title -->
+            <div class="title-block">
+                <div class="title">PROFORMA INVOICE</div>
+            </div>
+        </div>
+
+        <!-- Contact and Invoice Details -->
+        <div class="details-section">
+            <!-- Left: Company Contact Info -->
+            <div class="text-sm" style="color: #6b7280;">
+                <p style="margin: 0;">+994 51 205 50 52</p>
+                <p style="margin: 0;">+994 51 587 56 52</p>
+                <p style="margin: 0;">info@profitools.az</p>
+                 <p style="margin: 0;">accounting@profitools.az</p>
+            </div>
+
+            <!-- Right: Invoice No and Date (Fixed vertical alignment) -->
+            <div class="invoice-info">
+                <div style="margin-top: 0;">
+                    <span class="font-bold">INVOICE NO:</span>
+                    <span class="font-bold" style="color: var(--text-color);">{{ data.invoice_no }}</span>
+                </div>
+                <div style="margin-top: 0;">
+                    <span class="font-bold">DATE:</span>
+                    <span>{{ data.date }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billed To and Terms Section -->
+        <div class="info-box">
+            <!-- Left Column: BILLED TO -->
+            <div class="billed-to">
+                <h3>BILLED TO:</h3>
+
+                <div style="margin-bottom: 10pt;">
+                    <div class="field-label">Name & Address</div>
+                    <div class="field-value">{{ data.billed_to }}</div>
+                </div>
+
+                <div class="text-sm">
+                    <div class="field-label">Attention:</div>
+                    <div class="field-value">{{ data.attention_to }}</div>
+                </div>
+            </div>
+
+            <!-- Right Column: TERMS -->
+            <div class="terms">
+                <h3>TERMS:</h3>
+
+                <div class="terms-row">
+                    <span>Delivery Term:</span>
+                    <span>{{ data.delivery_term }}</span>
+                </div>
+
+                <div class="terms-row">
+                    <span>Validity Term:</span>
+                    <span>{{ data.validity_term }}</span>
+                </div>
+
+                <div class="terms-row">
+                    <span>Delivery Time:</span>
+                    <span>{{ data.delivery_time }}</span>
+                </div>
+
+                <div class="terms-row"
+                    style="margin-top: 8pt; padding-top: 3pt; border-top: 1pt solid var(--border-color);">
+                    <span class="font-extrabold" style="color: var(--text-color);">CURRENCY:</span>
+                    <span class="font-extrabold" style="color: var(--accent-color);">{{ data.currency }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itemized List Table -->
+        <table class="item-table">
+            <thead>
+                <tr>
+                    <th class="text-center col-no">No</th>
+                    <th class="text-left col-model">MODEL / EQUIPMENT</th>
+                    <!-- Combined QTY and UNIT -->
+                    <th class="text-center col-qty-unit">QTY / UNIT</th>
+                    <th class="text-right col-price">UNIT PRICE</th>
+                    <th class="text-right col-total">TOTAL AMOUNT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in processed_items %}
+                <tr>
+                    <td class="text-center col-no">{{ item.no }}</td>
+                    <td class="text-left col-model">{{ item.model }}</td>
+                    <!-- Display QTY and UNIT in one cell -->
+                    <td class="text-center col-qty-unit">{{ item.qty | float | round(2) | string }} {{ item.unit }}</td>
+                    <td class="tabular-nums text-right col-price">{{ item.unit_price | float | round(2) | string }}</td>
+                    <td class="font-bold tabular-nums text-right col-total">{{ item.line_total_formatted }} {{
+                        data.currency }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <!-- Subtotal -->
+                <tr class="total-row">
+                    <td colspan="3" style="border-bottom: none;"></td>
+                    <td>SUBTOTAL</td>
+                    <td>
+                        <span class="tabular-nums">{{ subtotal_formatted }}</span>
+                        <span>{{ data.currency }}</span>
+                    </td>
+                </tr>
+                <!-- Tax -->
+                <tr class="total-row" style="border-bottom: 1pt solid var(--border-color);">
+                    <td colspan="3" style="border-bottom: none;"></td>
+                    <td>
+                        <span class="tax-label">TAX ({{ data.tax_rate | float | round(2) | string }}%)</span>
+                    </td>
+                    <td>
+                        <span class="tabular-nums">{{ tax_amount_formatted }}</span>
+                        <span>{{ data.currency }}</span>
+                    </td>
+                </tr>
+                <!-- GRAND TOTAL -->
+                <tr class="grand-total-row">
+                    <td colspan="3" style="border-bottom: none;"></td>
+                    <td class="font-extrabold">GRAND TOTAL</td>
+                    <td class="font-extrabold">
+                        <span class="tabular-nums">{{ grand_total_formatted }}</span>
+                        <span>{{ data.currency }}</span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Notes Field -->
+        <div class="notes-block">
+            <h3>NOTES:</h3>
+            <div class="notes-content">
+                {{ data.notes if data.notes else 'Thank you for the order!' }}
+            </div>
+        </div>
+
+        <!-- Footer / Signature Block -->
+        <div class="footer">
+            <!-- Contact Person Field -->
+            <div class="contact-person">
+                <span>Contact Person:</span>
+                <span class="font-bold">{{ data.contact_person if data.contact_person else 'N/A' }}</span>
+            </div>
+
+            <div class="signature-line">
+                Signature (Profi Tools LLC)
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
