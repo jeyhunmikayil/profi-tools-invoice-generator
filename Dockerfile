@@ -1,11 +1,10 @@
-Use a slim Python 3.11 base image
 FROM python:3.11-slim
 
 Set environment variables for non-interactive installs
 ENV DEBIAN_FRONTEND=noninteractive
 
 Install system dependencies (GTK+ libraries) required by WeasyPrint
-This step is essential for PDF rendering.
+This command is split using the '' continuation character for readability.
 RUN apt-get update && 
 
 apt-get install -y --no-install-recommends 
@@ -37,6 +36,4 @@ Copy the core application file
 COPY main.py .
 
 Define the command to run the application using Uvicorn
-0.0.0.0 is required to listen publicly inside the container.
-10000 is the default port expected by Render's free tier.
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
