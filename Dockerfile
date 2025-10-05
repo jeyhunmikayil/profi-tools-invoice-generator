@@ -4,7 +4,7 @@ Set environment variables for non-interactive installs
 ENV DEBIAN_FRONTEND=noninteractive
 
 Install system dependencies (GTK+ libraries) required by WeasyPrint
-This command is split using the '' continuation character for readability.
+The backslash () character is used here to continue the single RUN command across multiple lines.
 RUN apt-get update && 
 
 apt-get install -y --no-install-recommends 
@@ -36,4 +36,5 @@ Copy the core application file
 COPY main.py .
 
 Define the command to run the application using Uvicorn
+The CMD instruction uses standard JSON array syntax.
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "10000"]
